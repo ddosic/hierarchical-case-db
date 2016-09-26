@@ -7,6 +7,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import hierarchical.entity.Gender;
 import hierarchical.entity.Person;
 import hierarchical.service.PersonMapper;
 
@@ -41,7 +42,7 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         List<Person> persons = new ArrayList<Person>();
         try {
             while(input.next()){
-                persons.add(new Person(input.getLong("id"), input.getString("first_name"), input.getString("last_name")));
+                persons.add(new Person(input.getLong("id"), input.getString("first_name"), input.getString("last_name"), Gender.valueOf(input.getString("last_name"))));
             }
             input.close();
         } catch (SQLException e) {

@@ -1,5 +1,6 @@
 package hierarchical.service.mongo;
 
+import hierarchical.entity.Gender;
 import hierarchical.entity.Person;
 import hierarchical.service.PersonMapper;
 
@@ -32,6 +33,7 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
     private static final String FIRST_NAME = "firstName";
     private static final String ANCESTORS = "ancestors";
     private static final String _ID = "_id";
+	private static final Object GENDER = "gender";
     MongoClient mongoClient;
     
     public PersonBsonMapperEngine(MongoClient mongoClient) {
@@ -70,7 +72,7 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
         MongoCursor<Document> cur = t.iterator();
         while (cur.hasNext()){
             Document doc = cur.next();
-            persons.add(new Person(doc.getLong(_ID), doc.getString(FIRST_NAME), doc.getString(LAST_NAME)));
+            persons.add(new Person(doc.getLong(_ID), doc.getString(FIRST_NAME), doc.getString(LAST_NAME), Gender.valueOf(doc.getString(GENDER))));
         }
         return persons;
     }
