@@ -21,6 +21,7 @@ import com.mongodb.client.MongoDatabase;
 
 import static com.mongodb.client.model.Filters.in;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Filters.or;
 
 /**
  * Concrete Person Mapper engine for working with MongoDB.
@@ -33,7 +34,7 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
     private static final String FIRST_NAME = "firstName";
     private static final String ANCESTORS = "ancestors";
     private static final String _ID = "_id";
-	private static final Object GENDER = "gender";
+	private static final String GENDER = "gender";
     MongoClient mongoClient;
     
     public PersonBsonMapperEngine(MongoClient mongoClient) {
@@ -50,6 +51,7 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
         map.put(_ID, person.getId());
         map.put(FIRST_NAME, person.getFirstName());
         map.put(LAST_NAME, person.getLastName());
+        map.put(GENDER, person.getGender().name());
 
         List<Long> ancestors = new ArrayList<Long>();
         if (person.getFather() != null) {
@@ -86,7 +88,7 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
     }
     
     public FindIterable<Document> getChildren(Long id) {
-        return getResults(eq(ANCESTORS + ".0", id));
+        return getResults(or (eq(ANCESTORS + ".0", id), eq(ANCESTORS + ".1", id)));
     }
     
     @SuppressWarnings("unchecked")
