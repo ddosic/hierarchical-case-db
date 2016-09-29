@@ -56,10 +56,16 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         Statement stmt;
         try {
             stmt = jdbcConn.createStatement();
-            String sql = "SELECT CONNECT_BY_ROOT id as id, CONNECT_BY_ROOT first_name as first_name, "
-                    + " CONNECT_BY_ROOT last_name as last_name FROM Osoba "
-                    + " WHERE id = " + id
-                    + " CONNECT BY PRIOR id = father_id or PRIOR id = mother_id";
+            
+            String sql = "select distinct id, first_name,last_name, gender from (SELECT  id as idc,CONNECT_BY_ROOT id as id, CONNECT_BY_ROOT first_name as first_name,"
+            		+ "  CONNECT_BY_ROOT last_name as last_name, CONNECT_BY_ROOT gender as gender FROM "
+                    + " (select id, first_name,last_name,gender, father_id as parent_id from OSOBA"
+                    		+ " UNION ALL "
+                    + " select id,first_name,last_name, gender, mother_id from OSOBA)"
+                   + "CONNECT BY PRIOR id = parent_id)"
+                   + "where idc = " + id
+                   + "order by id";
+
         ResultSet rs = stmt.executeQuery(sql);
         return rs;
         } catch (SQLException e) {
@@ -72,10 +78,13 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         Statement stmt;
         try {
             stmt = jdbcConn.createStatement();
-        String sql = "SELECT id, first_name, last_name FROM Osoba "
+        String sql = "SELECT id, first_name, last_name FROM "
+                + " (select id, first_name,last_name,gender, father_id as parent_id from OSOBA"
+        		+ " UNION ALL "
+        		+ " select id,first_name,last_name, gender, mother_id from OSOBA)"
                 + " WHERE LEVEL > 1"
                 + " START WITH id = " + id
-                + " CONNECT BY PRIOR id = father_id or PRIOR id = mother_id";
+                + " CONNECT BY PRIOR id = parent_id";
         ResultSet rs = stmt.executeQuery(sql);
         return rs;
         } catch (SQLException e) {
@@ -88,10 +97,13 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         Statement stmt;
         try {
             stmt = jdbcConn.createStatement();
-        String sql = "SELECT id, first_name, last_name FROM Osoba "
+        String sql = "SELECT id, first_name, last_name FROM "
+                + " (select id, first_name,last_name,gender, father_id as parent_id from OSOBA"
+        		+ " UNION ALL "
+        		+ " select id,first_name,last_name, gender, mother_id from OSOBA)"
                 + " WHERE LEVEL = 2"
                 + " START WITH id = " + id
-                + " CONNECT BY PRIOR id = father_id or PRIOR id = mother_id";
+                + " CONNECT BY PRIOR id = parent_id";
         ResultSet rs = stmt.executeQuery(sql);
         return rs;
         } catch (SQLException e) {
