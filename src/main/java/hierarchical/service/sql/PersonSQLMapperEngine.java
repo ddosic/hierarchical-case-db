@@ -5,7 +5,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import hierarchical.entity.Gender;
 import hierarchical.entity.Person;
@@ -19,10 +22,12 @@ import hierarchical.service.PersonMapper;
 public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
     
     Connection jdbcConn;
+    String table;
 
-    public PersonSQLMapperEngine(Connection jdbcConn) {
+    public PersonSQLMapperEngine(Connection jdbcConn, String table) {
         super();
         this.jdbcConn = jdbcConn;
+        this.table = table;
     }
 
     public String serialize(Person person) {
@@ -38,8 +43,8 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         return "(" + person.getId() + ",'" + person.getFirstName() + "','" + person.getLastName()+ "'," + father + "," + mother +",'"+ person.getGender() + "')";
     }
 
-    public List<Person> deserializeList(ResultSet input) {
-        List<Person> persons = new ArrayList<Person>();
+    public Collection<Person> deserializeList(ResultSet input) {
+        Set<Person> persons = new HashSet<Person>();
         try {
             while(input.next()){
                 persons.add(new Person(input.getLong("id"), input.getString("first_name"), input.getString("last_name"), Gender.MALE));
@@ -48,24 +53,24 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
         return persons;
     }
 
-    public ResultSet getAllAncestors(Long id) {
+    public ResultSet getAllAncestors(Long id, Integer limit) {
         Statement stmt;
         try {
             stmt = jdbcConn.createStatement();
             
             String sql = "select distinct id, first_name,last_name, gender from (SELECT  id as idc,CONNECT_BY_ROOT id as id, CONNECT_BY_ROOT first_name as first_name,"
             		+ "  CONNECT_BY_ROOT last_name as last_name, CONNECT_BY_ROOT gender as gender FROM "
-                    + " (select id, first_name,last_name,gender, father_id as parent_id from OSOBA"
-                    		+ " UNION ALL "
-                    + " select id,first_name,last_name, gender, mother_id from OSOBA)"
-                   + "CONNECT BY PRIOR id = parent_id)"
-                   + "where idc = " + id
-                   + "order by id";
-
+                    + " (select id, first_name,last_name,gender, father_id as parent_id from " + table
+                    + " UNION ALL "
+                    + " select id,first_name,last_name, gender, mother_id from " + table + ")"
+                   + " CONNECT BY PRIOR id = parent_id)"
+                   + " where idc = " + id;
+            if(limit!=null){
+                sql += " and ROWNUM <= " + limit;
+            }
         ResultSet rs = stmt.executeQuery(sql);
         return rs;
         } catch (SQLException e) {
@@ -74,17 +79,20 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         return null;
     }
 
-    public ResultSet getAllDescendants(Long id) {
+    public ResultSet getAllDescendants(Long id, Integer limit) {
         Statement stmt;
         try {
             stmt = jdbcConn.createStatement();
-        String sql = "SELECT id, first_name, last_name FROM "
-                + " (select id, first_name,last_name,gender, father_id as parent_id from OSOBA"
+        String sql = "SELECT distinct id, first_name, last_name FROM "
+                + " (select id, first_name,last_name,gender, father_id as parent_id from " + table
         		+ " UNION ALL "
-        		+ " select id,first_name,last_name, gender, mother_id from OSOBA)"
+        		+ " select id,first_name,last_name, gender, mother_id from " + table + ")"
                 + " WHERE LEVEL > 1"
                 + " START WITH id = " + id
                 + " CONNECT BY PRIOR id = parent_id";
+        if(limit!=null){
+            sql += " and ROWNUM <= " + limit;
+        }
         ResultSet rs = stmt.executeQuery(sql);
         return rs;
         } catch (SQLException e) {
@@ -97,10 +105,10 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
         Statement stmt;
         try {
             stmt = jdbcConn.createStatement();
-        String sql = "SELECT id, first_name, last_name FROM "
-                + " (select id, first_name,last_name,gender, father_id as parent_id from OSOBA"
+        String sql = "SELECT distinct id, first_name, last_name FROM "
+                + " (select id, first_name,last_name,gender, father_id as parent_id from " + table
         		+ " UNION ALL "
-        		+ " select id,first_name,last_name, gender, mother_id from OSOBA)"
+        		+ " select id,first_name,last_name, gender, mother_id from " + table+")"
                 + " WHERE LEVEL = 2"
                 + " START WITH id = " + id
                 + " CONNECT BY PRIOR id = parent_id";
@@ -115,7 +123,7 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
     public void save(String o) {
         try {
             Statement stat = jdbcConn.createStatement();
-            stat.executeUpdate("insert into osoba values " + o);
+            stat.executeUpdate("insert into " + table + " values " + o);
             stat.close();
             
         } catch (SQLException e) {
@@ -127,7 +135,7 @@ public class PersonSQLMapperEngine implements PersonMapper<ResultSet, String>{
     public void resetDB() {
         try {
             Statement stat = jdbcConn.createStatement();
-            stat.execute("delete from Osoba");
+            stat.execute("delete from " + table);
         } catch (SQLException e) {
             e.printStackTrace();
         }

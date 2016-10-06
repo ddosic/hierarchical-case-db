@@ -23,7 +23,7 @@ public class PersonGenerator {
 	@SuppressWarnings("rawtypes")
 	private PersonMapper mapper;
 	
-    Random r = new Random();
+    Random r = new Random(100);
 	
 	// person population from which we select a parent
 	private List<Person> population;
@@ -57,6 +57,7 @@ public class PersonGenerator {
 			population = procreate(step);
 			generatedTotal += step;
 		}
+		
 	}
 
     private int initPopulation(int step) {

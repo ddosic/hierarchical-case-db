@@ -36,9 +36,11 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
     private static final String _ID = "_id";
 	private static final String GENDER = "gender";
     MongoClient mongoClient;
+    String collectionName;
     
-    public PersonBsonMapperEngine(MongoClient mongoClient) {
+    public PersonBsonMapperEngine(MongoClient mongoClient, String collectionName) {
         super();
+        this.collectionName= collectionName;
         this.mongoClient = mongoClient;
     }
 
@@ -79,32 +81,36 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
         return persons;
     }
 
-    private FindIterable<Document> getResults(Bson query) {
+    private FindIterable<Document> getResults(Bson query, Integer limit) {
         
         MongoDatabase db = mongoClient.getDatabase("test");
-        MongoCollection<Document> coll = db.getCollection("abba");
-        FindIterable<Document> docs = coll.find(query);
-        return docs;
+
+        MongoCollection<Document> coll = db.getCollection(collectionName);
+        if (limit != null) {
+            return coll.find(query).limit(limit);
+        } else {
+            return coll.find(query);
+        }
     }
     
     public FindIterable<Document> getChildren(Long id) {
-        return getResults(or (eq(ANCESTORS + ".0", id), eq(ANCESTORS + ".1", id)));
+        return getResults(or (eq(ANCESTORS + ".0", id), eq(ANCESTORS + ".1", id)), null);
     }
     
     @SuppressWarnings("unchecked")
-    public FindIterable<Document> getAllAncestors(Long id) {
-        Document doc =  getResults(eq("_id", id)).first();
-        return getResults(in("_id", (ArrayList<Long>) doc.get(ANCESTORS)));
+    public FindIterable<Document> getAllAncestors(Long id, Integer limit) {
+        Document doc =  getResults(eq("_id", id), limit).first();
+        return getResults(in("_id", (ArrayList<Long>) doc.get(ANCESTORS)), limit);
     }
 
-    public FindIterable<Document> getAllDescendants(Long id) {
-        return getResults(in(ANCESTORS, id));
+    public FindIterable<Document> getAllDescendants(Long id, Integer limit) {
+        return getResults(in(ANCESTORS, id), limit);
     }
     
     @SuppressWarnings("unchecked")
     public void save(Document o) {
         MongoDatabase db = mongoClient.getDatabase("test");
-        MongoCollection<Document> coll = db.getCollection("abba");
+        MongoCollection<Document> coll = db.getCollection(collectionName);
         List<Long> ancestors = (List<Long>) o.get(ANCESTORS);
         if(ancestors.size() > 0){
             MongoCursor<Document> cur = coll.find(in("_id",ancestors)).iterator();
@@ -119,7 +125,7 @@ public class PersonBsonMapperEngine implements PersonMapper<FindIterable<Documen
 
     public void resetDB() {
         MongoDatabase db = mongoClient.getDatabase("test");
-        MongoCollection<Document> coll = db.getCollection("abba");
+        MongoCollection<Document> coll = db.getCollection(collectionName);
         coll.deleteMany(new Document());
     }
 }

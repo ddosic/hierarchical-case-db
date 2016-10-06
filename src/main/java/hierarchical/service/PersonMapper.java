@@ -1,5 +1,6 @@
 package hierarchical.service;
 
+import java.util.Collection;
 import java.util.List;
 
 import hierarchical.entity.Person;
@@ -14,10 +15,10 @@ import hierarchical.entity.Person;
 public interface PersonMapper<I,O> {
     public O serialize(Person person);
 
-    public List<Person> deserializeList(I input);
+    public Collection<Person> deserializeList(I input);
     
-    public I getAllAncestors(Long id);
-    public I getAllDescendants(Long id);
+    public I getAllAncestors(Long id, Integer limit);
+    public I getAllDescendants(Long id, Integer limit);
     public I getChildren(Long id);
     public void save(O o);
 
